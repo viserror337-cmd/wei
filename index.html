@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>毕业快乐 · 给我最好的朋友</title>
+<style>
+  :root{
+    --ink:#2a241d;
+    --ink-2:#4d4538;
+    --ink-3:#7a6f5d;
+    --gold:#b08d4f;
+    --gold-l:#e2c68d;
+    --paper:#fbf7ee;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+
+  html{
+    scroll-behavior:smooth;
+    -webkit-text-size-adjust:100%;
+  }
+
+  body{
+    background:#efe7d6;
+    color:var(--ink);
+    font-family:"Noto Serif SC","Source Han Serif SC","Songti SC","STSong","SimSun",serif;
+    line-height:2;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ================= 纸张噪点 ================= */
+  .grain{
+    position:fixed;
+    inset:0;
+    z-index:9998;
+    pointer-events:none;
+    opacity:.05;
+    mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ================= 阅读进度 ================= */
+  .progress{
+    position:fixed;
+    top:0;left:0;
+    height:2px;
+    width:0;
+    z-index:9999;
+    background:linear-gradient(90deg,#8b6d3a,#e2c68d);
+    box-shadow:0 0 10px rgba(226,198,141,.55);
+    transition:width .08s linear;
+    opacity:0;
+    pointer-events:none;
+  }
+  .progress.on{opacity:1;}
+
+  /* ================= 信封封面 ================= */
+  .envelope-screen{
+    position:fixed;
+    inset:0;
+    z-index:9990;
+    display:grid;
+    place-items:center;
+    padding:1.5rem;
+    background:
+      radial-gradient(58% 42% at 50% 34%, rgba(226,198,141,.16), transparent 72%),
+      radial-gradient(95% 75% at 50% 112%, rgba(28,92,76,.5), transparent 72%),
+      linear-gradient(168deg,#0f2823 0%,#0a1a17 52%,#050d0b 100%);
+    transition:opacity 1.1s cubic-bezier(.4,0,.2,1), visibility 1.1s;
+    overflow:hidden;
+  }
+  .envelope-screen.gone{
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+  }
+
+  /* 光晕 */
+  .halo{
+    position:absolute;
+    width:min(120vw,900px);
+    aspect-ratio:1;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(226,198,141,.14) 0%, rgba(226,198,141,.05) 38%, transparent 68%);
+    filter:blur(6px);
+    animation:breathe 9s ease-in-out infinite;
+    pointer-events:none;
+  }
+  @keyframes breathe{
+    0%,100%{transform:scale(1);opacity:.75;}
+    50%{transform:scale(1.13);opacity:1;}
+  }
+
+  /* 旋转圆环 */
+  .ring{
+    position:absolute;
+    border-radius:50%;
+    pointer-events:none;
+  }
+  .ring.a{
+    width:min(88vw,620px);
+    aspect-ratio:1;
+    border:1px solid rgba(226,198,141,.14);
+    animation:spin 90s linear infinite;
+  }
+  .ring.b{
+    width:min(62vw,430px);
+    aspect-ratio:1;
+    border:1px dashed rgba(226,198,141,.10);
+    animation:spin 140s linear infinite reverse;
+  }
+  @keyframes spin{
+    from{transform:rotate(0deg);}
+    to{transform:rotate(360deg);}
+  }
+
+  /* 叶子 */
+  .leaves{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    overflow:hidden;
+  }
+  .leaf{
+    position:absolute;
+    top:-6vh;
+    background:linear-gradient(140deg,#e8c483,#b9762f 70%);
+    border-radius:0 100% 0 100%;
+    opacity:0;
+    animation-name:fall;
+    animation-timing-function:linear;
+    animation-iteration-count:infinite;
+    will-change:transform;
+  }
+  @keyframes fall{
+    0%{transform:translate3d(0,-10vh,0) rotate(0deg);opacity:0;}
+    8%{opacity:.8;}
+    80%{opacity:.5;}
+    100%{transform:translate3d(var(--drift,40px),112vh,0) rotate(760deg);opacity:0;}
+  }
+
+  /* 信封容器 */
+  .envelope-wrap{
+    position:relative;
+    z-index:5;
+    width:min(92vw,430px);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:2.2rem;
+  }
+
+  /* 信封本体 */
+  .envelope{
+    position:relative;
+    width:100%;
+    aspect-ratio:1.5 / 1;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    filter:drop-shadow(0 30px 45px rgba(0,0,0,.5));
+    transition:transform .5s cubic-bezier(.2,.8,.3,1);
+    animation:envFloat 5s ease-in-out infinite;
+    outline:none;
+    border:none;
+    background:none;
+    padding:0;
+    font-family:inherit;
+  }
+  @keyframes envFloat{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-9px);}
+  }
+  .envelope:hover,
+  .envelope:focus-visible{
+    transform:translateY(-14px) scale(1.02);
+  }
+  .envelope:focus-visible{
+    outline:2px solid rgba(226,198,141,.75);
+    outline-offset:8px;
+    border-radius:4px;
+  }
+
+  /* 信封底 */
+  .env-body{
+    position:absolute;
+    inset:0;
+    border-radius:6px;
+    background:linear-gradient(160deg,#f2e6cd 0%,#e6d5b2 55%,#d8c49a 100%);
+    box-shadow:inset 0 0 0 1px rgba(120,95,55,.18);
+    overflow:hidden;
+  }
+
+  /* 信封折线装饰 */
+  .env-body::before{
+    content:"";
+    position:absolute;
+    left:0;right:0;top:0;
+    height:52%;
+    background:linear-gradient(160deg,#f7ecd6 0%,#ead9b8 100%);
+    clip-path:polygon(0 0, 100% 0, 50% 100%);
+    box-shadow:0 3px 6px rgba(120,95,55,.12);
+  }
+  .env-body::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+      linear-gradient(to top right, transparent calc(50% - 1px), rgba(120,95,55,.14) 50%, transparent calc(50% + 1px)),
+      linear-gradient(to top left, transparent calc(50% - 1px), rgba(120,95,55,.14) 50%, transparent calc(50% + 1px));
+    pointer-events:none;
+  }
+
+  /* 信封中央的蜡封 */
+  .env-seal{
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    width:74px;height:74px;
+    border-radius:50%;
+    display:grid;
+    place-items:center;
+    color:#f7ddd0;
+    font-size:10.5px;
+    line-height:1.5;
+    letter-spacing:.14em;
+    text-align:center;
+    background:radial-gradient(circle at 34% 28%, #c04048, #8a2029 62%, #661319 100%);
+    box-shadow:
+      inset 0 2px 5px rgba(255,220,210,.32),
+      inset 0 -6px 12px rgba(0,0,0,.42),
+      0 8px 18px -8px rgba(110,20,30,.9);
+    z-index:3;
+    transition:transform .5s cubic-bezier(.2,.8,.3,1), box-shadow .5s;
+  }
+  .env-seal::before{
+    content:"";
+    position:absolute;
+    inset:8px;
+    border:1px dashed rgba(255,215,200,.35);
+    border-radius:50%;
+  }
+  .envelope:hover .env-seal,
+  .envelope:focus-visible .env-seal{
+    transform:translate(-50%,-50%) scale(1.08) rotate(-6deg);
+    box-shadow:
+      inset 0 2px 5px rgba(255,220,210,.32),
+      inset 0 -6px 12px rgba(0,0,0,.42),
+      0 12px 26px -8px rgba(110,20,30,1);
+  }
+
+  /* 收件人小字 */
+  .env-address{
+    position:absolute;
+    left:0;right:0;
+    bottom:12%;
+    text-align:center;
+    font-size:.72rem;
+    letter-spacing:.32em;
+    text-indent:.32em;
+    color:#8a7550;
+    z-index:3;
+    pointer-events:none;
+  }
+  .env-stamp{
+    position:absolute;
+    right:7%;
+    top:6%;
+    width:44px;
+    height:52px;
+    border:1px dashed rgba(120,95,55,.4);
+    border-radius:2px;
+    display:grid;
+    place-items:center;
+    font-size:9px;
+    letter-spacing:.1em;
+    color:#9a835c;
+    background:rgba(255,250,240,.5);
+    z-index:3;
+    pointer-events:none;
+  }
+
+  /* 提示文字 */
+  .env-hint{
+    text-align:center;
+    color:#c9b78a;
+    font-size:.76rem;
+    letter-spacing:.42em;
+    text-indent:.42em;
+    animation:hintBlink 2.8s ease-in-out infinite;
+  }
+  @keyframes hintBlink{
+    0%,100%{opacity:.5;}
+    50%{opacity:1;}
+  }
+  .env-top{
+    font-size:.68rem;
+    letter-spacing:.6em;
+    text-indent:.6em;
+    color:#a08e62;
+    margin-bottom:-.6rem;
+  }
+
+  /* 信封打开时的动画：信封向上飞出 */
+  .envelope-screen.opening .envelope-wrap{
+    animation:envFly .95s cubic-bezier(.4,0,.2,1) forwards;
+  }
+  @keyframes envFly{
+    0%{transform:translateY(0) scale(1);opacity:1;}
+    35%{transform:translateY(-14px) scale(1.03);opacity:1;}
+    100%{transform:translateY(-130vh) scale(.85);opacity:0;}
+  }
+
+  /* ================= 主内容（信） ================= */
+  .site{
+    opacity:0;
+    visibility:hidden;
+    transition:opacity 1.2s cubic-bezier(.4,0,.2,1), visibility 1.2s;
+  }
+  .site.show{
+    opacity:1;
+    visibility:visible;
+  }
+
+  main{
+    position:relative;
+    padding:clamp(2.4rem,7vw,4.5rem) 1rem clamp(2rem,6vw,4rem);
+    background:
+      radial-gradient(120% 60% at 50% 0%, #f4eddd 0%, #e9e0cc 60%, #e3d9c2 100%);
+    min-height:100svh;
+  }
+
+  .paper{
+    position:relative;
+    max-width:780px;
+    margin:0 auto;
+    background:linear-gradient(180deg,#fffdf8 0%,#fdf9f0 62%,#faf4e7 100%);
+    border-radius:3px;
+    padding:clamp(1.7rem,5.5vw,4rem) clamp(1.35rem,5.5vw,3.6rem) clamp(2.6rem,7vw,4rem);
+    box-shadow:
+      0 1px 1px rgba(80,65,35,.06),
+      0 6px 14px -6px rgba(80,65,35,.18),
+      0 40px 80px -40px rgba(60,45,18,.55),
+      inset 0 0 0 1px rgba(255,255,255,.7);
+  }
+
+  .paper::before,
+  .paper::after{
+    content:"";
+    position:absolute;
+    width:26px;height:26px;
+    border:1px solid rgba(176,141,79,.35);
+    pointer-events:none;
+  }
+  .paper::before{
+    top:14px;left:14px;
+    border-right:none;border-bottom:none;
+  }
+  .paper::after{
+    bottom:14px;right:14px;
+    border-left:none;border-top:none;
+  }
+
+  .paper-head{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:.6rem 1rem;
+    padding-bottom:1.1rem;
+    margin-bottom:2.2rem;
+    border-bottom:1px solid rgba(176,141,79,.28);
+    font-size:.8rem;
+    letter-spacing:.22em;
+    color:var(--gold);
+  }
+  .paper-head .date{
+    color:var(--ink-3);
+    letter-spacing:.16em;
+    font-size:.74rem;
+  }
+
+  .chapter{
+    display:flex;
+    align-items:center;
+    gap:1rem;
+    margin:3.4rem 0 1.5rem;
+    font-size:.72rem;
+    font-weight:400;
+    letter-spacing:.48em;
+    text-indent:.48em;
+    color:var(--gold);
+  }
+  .chapter::before{
+    content:"";
+    width:24px;
+    height:1px;
+    background:rgba(176,141,79,.75);
+    flex:none;
+  }
+  .chapter::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:linear-gradient(90deg,rgba(176,141,79,.35),transparent);
+  }
+  .chapter:first-of-type{margin-top:0;}
+
+  .letter p{
+    margin:0 0 1.15em;
+    font-size:clamp(.99rem,2.75vw,1.075rem);
+    line-height:2.08;
+    letter-spacing:.012em;
+    color:var(--ink-2);
+    text-indent:2em;
+    text-align:justify;
+    text-justify:inter-ideograph;
+    word-break:break-word;
+  }
+  .letter p.no-indent{text-indent:0;}
+
+  .verse{
+    margin:3rem auto;
+    max-width:32em;
+    text-align:center;
+    text-indent:0;
+    font-size:clamp(1rem,3.1vw,1.13rem);
+    letter-spacing:.14em;
+    line-height:2.4;
+    color:#7d6844;
+    padding:1.6rem 0;
+    position:relative;
+  }
+  .verse::before,
+  .verse::after{
+    content:"";
+    display:block;
+    width:100%;
+    height:1px;
+    margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(176,141,79,.45),transparent);
+  }
+  .verse::before{margin-bottom:1.4rem;}
+  .verse::after{margin-top:1.4rem;}
+
+  .canada{
+    position:relative;
+    margin:3rem 0 2rem;
+    padding:clamp(1.6rem,5.5vw,2.6rem);
+    border-radius:6px;
+    overflow:hidden;
+    color:#dcece6;
+    background:
+      radial-gradient(85% 65% at 84% 8%, rgba(105,220,190,.34), transparent 62%),
+      radial-gradient(85% 65% at 8% 92%, rgba(150,125,235,.32), transparent 62%),
+      linear-gradient(158deg,#10312b 0%,#0a1e27 100%);
+    box-shadow:
+      0 24px 50px -30px rgba(8,40,35,.95),
+      inset 0 0 0 1px rgba(150,220,200,.14);
+  }
+  .canada::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.06) 50%,transparent 60%);
+    pointer-events:none;
+  }
+  .canada .label{
+    font-size:.68rem;
+    letter-spacing:.46em;
+    text-indent:.46em;
+    color:#8fd6bf;
+    margin-bottom:1.1rem;
+  }
+  .canada p{
+    color:#dcece6;
+    text-indent:0;
+    margin:0 0 .7em;
+    font-size:clamp(.97rem,2.7vw,1.05rem);
+    letter-spacing:.03em;
+  }
+  .canada p:last-child{margin-bottom:0;}
+
+  .sign{
+    margin-top:3.2rem;
+    padding-top:2rem;
+    border-top:1px dashed rgba(176,141,79,.35);
+    text-align:right;
+  }
+  .sign p{
+    text-indent:0;
+    margin:0 0 .35rem;
+    font-size:clamp(.95rem,2.7vw,1.02rem);
+    color:var(--ink-2);
+    letter-spacing:.06em;
+  }
+  .sign .name{
+    margin-top:.9rem;
+    font-size:clamp(1.15rem,3.6vw,1.4rem);
+    color:var(--gold);
+    letter-spacing:.2em;
+    transform:rotate(-2.5deg);
+    display:inline-block;
+  }
+
+  .seal-wrap{
+    display:flex;
+    justify-content:center;
+    margin-top:2.4rem;
+  }
+  .seal{
+    width:106px;
+    height:106px;
+    border-radius:50%;
+    display:grid;
+    place-items:center;
+    text-align:center;
+    color:#f7ddd0;
+    font-size:14px;
+    line-height:1.55;
+    letter-spacing:.16em;
+    transform:rotate(-7deg);
+    background:radial-gradient(circle at 34% 28%, #c04048, #8a2029 62%, #661319 100%);
+    box-shadow:
+      inset 0 2px 5px rgba(255,220,210,.32),
+      inset 0 -8px 16px rgba(0,0,0,.42),
+      0 12px 24px -12px rgba(110,20,30,.85);
+    position:relative;
+  }
+  .seal::before{
+    content:"";
+    position:absolute;
+    inset:11px;
+    border:1px dashed rgba(255,215,200,.35);
+    border-radius:50%;
+  }
+
+  .ending{
+    max-width:760px;
+    margin:0 auto;
+    padding:clamp(3.2rem,9vw,5.5rem) 1.2rem clamp(3rem,8vw,5.5rem);
+    text-align:center;
+  }
+  .ending h2{
+    font-size:clamp(1.45rem,5vw,1.95rem);
+    font-weight:600;
+    letter-spacing:.26em;
+    text-indent:.26em;
+    color:#3a3226;
+    margin-bottom:1.3rem;
+  }
+  .ending p{
+    font-size:clamp(.95rem,2.8vw,1.04rem);
+    color:#6a6150;
+    letter-spacing:.05em;
+    margin-bottom:.5rem;
+  }
+  .ending .last{
+    margin-top:2.2rem;
+    font-size:clamp(1.05rem,3.4vw,1.22rem);
+    color:var(--gold);
+    letter-spacing:.18em;
+  }
+  .ending .fin{
+    margin-top:3rem;
+    font-size:.72rem;
+    letter-spacing:.6em;
+    text-indent:.6em;
+    color:#b3a88f;
+  }
+
+  .to-top{
+    position:fixed;
+    right:clamp(14px,3vw,26px);
+    bottom:clamp(16px,3vw,28px);
+    width:46px;height:46px;
+    border-radius:50%;
+    border:1px solid rgba(176,141,79,.45);
+    background:rgba(251,247,238,.9);
+    color:var(--gold);
+    display:grid;
+    place-items:center;
+    font-size:15px;
+    cursor:pointer;
+    z-index:900;
+    opacity:0;
+    transform:translateY(12px);
+    pointer-events:none;
+    transition:opacity .45s ease, transform .45s ease, background .3s;
+    backdrop-filter:blur(4px);
+    font-family:inherit;
+  }
+  .to-top.show{
+    opacity:1;
+    transform:none;
+    pointer-events:auto;
+  }
+  .to-top:hover{
+    background:#fff;
+    border-color:var(--gold);
+  }
+
+  [data-reveal]{
+    opacity:0;
+    transform:translateY(24px);
+    transition:opacity 1.05s cubic-bezier(.2,.8,.3,1), transform 1.05s cubic-bezier(.2,.8,.3,1);
+  }
+  [data-reveal].in{
+    opacity:1;
+    transform:none;
+  }
+
+  @media (max-width:520px){
+    .paper-head{
+      flex-direction:column;
+      align-items:flex-start;
+      gap:.3rem;
+    }
+    .letter p{text-align:left;}
+    .seal{width:94px;height:94px;font-size:12.5px;}
+    .env-seal{width:64px;height:64px;font-size:9.5px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    .halo,.ring,.leaf,.envelope,.env-hint{animation:none;}
+    .leaf{display:none;}
+    [data-reveal]{opacity:1;transform:none;transition:none;}
+    .envelope-screen.opening .envelope-wrap{animation:none;opacity:0;}
+  }
+</style>
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<!-- ==================== 信封封面（先看到这个） ==================== -->
+<div class="envelope-screen" id="envelopeScreen">
+  <div class="halo" aria-hidden="true"></div>
+  <div class="ring a" aria-hidden="true"></div>
+  <div class="ring b" aria-hidden="true"></div>
+  <div class="leaves" id="leaves" aria-hidden="true"></div>
+
+  <div class="envelope-wrap">
+    <p class="env-top">抱歉我没有带礼物来。<br>给 我 的 朋 友wei loon</p>
+
+    <button class="envelope" id="envelope" aria-label="点击打开信封">
+      <span class="env-body" aria-hidden="true"></span>
+      <span class="env-stamp" aria-hidden="true">毕业<br>快乐</span>
+      <span class="env-seal" aria-hidden="true">启<br>封</span>
+      <span class="env-address" aria-hidden="true">致 · 最好的wei 哥</span>
+    </button>
+
+    <p class="env-hint">轻 轻 点 一 下 信 封</p>
+  </div>
+</div>
+
+<!-- ==================== 主内容（打开后的信） ==================== -->
+<div class="site" id="site">
+
+  <main>
+    <article class="paper">
+
+      <div class="paper-head" data-reveal>
+        <span>致 · 我最好的朋友</span>
+        <span class="date">毕业典礼那天</span>
+      </div>
+
+      <div class="letter">
+
+        <h3 class="chapter" data-reveal>那 时 候</h3>
+        <p data-reveal>你还记得吗？from 3 的时候我认识你，在rbt科室，我很乐意帮忙你们，有什么问题就找我我确实很难办但是谢谢你</p>
+        <p data-reveal>哈哈哈哈哈哈，我都觉得我很好笑，自己的东西还没做好就求帮别人，最后md做出我一坨</p>
+
+        <h3 class="chapter" data-reveal>你</h3>
+        <p data-reveal>其实你这个人，其实你要知道什么是对什么是错、做什么东西要思考。</p>
+        <p data-reveal>你真的需要去gym,锻炼一下，你不要被那些人怂恿做事情要考虑。</p>。</p>
+
+        <h3 class="chapter" data-reveal>抱 歉</h3>
+        <p data-reveal>我对不起因为我的存在给你带来很多麻烦，谢谢你愿意当我朋友，我也很抱歉。。</p>
+
+        <h3 class="chapter" data-reveal>谢 谢 你</h3>
+        <p data-reveal>谢谢你愿意当我的朋友。哈哈哈哈哈。你的食物好吃好吃。</p>
+        <p data-reveal>我有没有讲太多废话？抱歉，成功浪费了你的时间。谢谢你。</p>
+
+        <h3 class="chapter" data-reveal>我祝你</h3>
+        <p data-reveal>祝你考试成功，做什么要顺顺利利。</p>
+
+        <h3 class="chapter" data-reveal>我 们 的 约 定</h3>
+        <div class="canada" data-reveal>
+          <p class="label">在海底捞等你</p>
+          <p>我不知道考试会不会成功看吧我有可能会去别的地方做工。</p>
+          <p>体验一下。</p>
+        </div>
+
+        <p class="verse" data-reveal>
+          落叶如水风而去，<br>
+          落叶如时间，带走了时间。
+        </p>
+
+        <p data-reveal>谢谢你愿意在那么多年里，一直当我朋友。</p>
+        <p class="no-indent" data-reveal>我能做的，就是把这封信交到你手上。</p>
+
+      </div>
+
+      <div class="sign" data-reveal>
+        <p>毕业快乐。</p>
+        <p class="name">—— YAP WEI LOON</p>
+      </div>
+
+      <div class="seal-wrap" data-reveal>
+        <div class="seal" aria-label="毕业快乐印章">
+          毕 业<br>快 乐
+        </div>
+      </div>
+
+    </article>
+
+    <section class="ending">
+      <h2 data-reveal>谢谢你</h2>
+      <p data-reveal>谢谢你，当我朋友。</p>
+      <p data-reveal>这份礼物迟到了很久，但它是我认真写的。</p>
+      <p class="last" data-reveal>毕业快乐，我的朋友。</p>
+      <p class="fin" data-reveal>— 完 —</p>
+    </section>
+  </main>
+
+  <button class="to-top" id="toTop" aria-label="回到顶部">↑</button>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var reduceMotion = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------------- 1. 叶子 ---------------- */
+  var layer = document.getElementById('leaves');
+  if (layer && !reduceMotion) {
+    var isSmall = window.innerWidth < 600;
+    var count = isSmall ? 11 : 18;
+
+    for (var i = 0; i < count; i++) {
+      var leaf = document.createElement('span');
+      leaf.className = 'leaf';
+
+      var size = 7 + Math.random() * 11;
+      leaf.style.width = size.toFixed(1) + 'px';
+      leaf.style.height = size.toFixed(1) + 'px';
+      leaf.style.left = (Math.random() * 100).toFixed(2) + 'vw';
+
+      var dur = 11 + Math.random() * 13;
+      leaf.style.animationDuration = dur.toFixed(1) + 's';
+      leaf.style.animationDelay = (-Math.random() * dur).toFixed(1) + 's';
+      leaf.style.setProperty('--drift', (Math.random() * 180 - 90).toFixed(0) + 'px');
+
+      layer.appendChild(leaf);
+    }
+  }
+
+  /* ---------------- 2. 打开信封 ---------------- */
+  var screen = document.getElementById('envelopeScreen');
+  var envelope = document.getElementById('envelope');
+  var site = document.getElementById('site');
+  var progress = document.getElementById('progress');
+  var opened = false;
+
+  function openEnvelope() {
+    if (opened) return;
+    opened = true;
+
+    // 信封向上飞走
+    screen.classList.add('opening');
+
+    // 等信封飞出去一点，开始显示信
+    setTimeout(function () {
+      screen.classList.add('gone');
+      site.classList.add('show');
+      document.body.style.overflowY = 'auto';
+      if (progress) progress.classList.add('on');
+
+      // 触发信纸里的渐显
+      revealAll();
+
+      // 让页面滚到最上面
+      window.scrollTo(0, 0);
+    }, reduceMotion ? 50 : 620);
+  }
+
+  // 一开始先锁住滚动
+  document.body.style.overflowY = 'hidden';
+
+  if (envelope) {
+    envelope.addEventListener('click', openEnvelope);
+
+    // 键盘 Enter / Space 也能打开
+    envelope.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        openEnvelope();
+      }
+    });
+  }
+
+  /* ---------------- 3. 信纸滚动渐显 ---------------- */
+  var revealItems = document.querySelectorAll('[data-reveal]');
+  var io = null;
+
+  function revealAll() {
+    if (reduceMotion || !('IntersectionObserver' in window)) {
+      revealItems.forEach(function (el) { el.classList.add('in'); });
+      return;
+    }
+
+    if (io) return;
+
+    io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in');
+          io.unobserve(entry.target);
+        }
+      });
+    }, {
+      threshold: 0.1,
+      rootMargin: '0px 0px -60px 0px'
+    });
+
+    revealItems.forEach(function (el) { io.observe(el); });
+  }
+
+  /* ---------------- 4. 阅读进度条 ---------------- */
+  var ticking = false;
+
+  function updateProgress() {
+    if (!opened) { ticking = false; return; }
+
+    var doc = document.documentElement;
+    var max = doc.scrollHeight - window.innerHeight;
+    var pct = max > 0 ? (window.scrollY / max) * 100 : 0;
+    if (progress) progress.style.width = pct.toFixed(2) + '%';
+    ticking = false;
+  }
+
+  window.addEventListener('scroll', function () {
+    if (!ticking) {
+      window.requestAnimationFrame(updateProgress);
+      ticking = true;
+    }
+  }, { passive: true });
+
+  /* ---------------- 5. 回到顶部 ---------------- */
+  var toTop = document.getElementById('toTop');
+
+  function toggleTop() {
+    if (!toTop || !opened) return;
+    if (window.scrollY > window.innerHeight * 0.85) {
+      toTop.classList.add('show');
+    } else {
+      toTop.classList.remove('show');
+    }
+  }
+
+  window.addEventListener('scroll', toggleTop, { passive: true });
+
+  if (toTop) {
+    toTop.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+    });
+  }
+})();
+</script>
+</body>
+</html>
